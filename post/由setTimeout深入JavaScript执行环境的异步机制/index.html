@@ -1,0 +1,36 @@
+<html>
+<head>
+<meta charset="utf-8">
+<title>由setTimeout深入JavaScript执行环境的异步机制 - Mickey&#39;s Blog</title>
+<base href="/">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0">
+<link rel="icon" type="image/x-icon" href="/favicon.ico">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#2a2b33">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="translucent">
+<meta name="description" content="问题背景在一次开发任务中，需要实现如下一个饼状图动画，基于canvas进行绘图，但由于对于JS运行环境中异步机制的不了解，所以遇到了一个棘手的问题，始终无法解决，之后在与同事交流之后才恍然大悟。问题的根节在于经典的JS定时器异步问题，所以在解决问题之后，又通过了大量的资料阅读扩展和一段时间的实战总结，现在对JS运行环境中异步机制做一个较为深入的分析。   上图中为最终想要实现的效果，使得各扇形部分">
+<meta name="keywords" content="JavaScript">
+<meta property="og:type" content="article">
+<meta property="og:title" content="由setTimeout深入JavaScript执行环境的异步机制">
+<meta property="og:url" content="http://mickeywang.com/post/由setTimeout深入JavaScript执行环境的异步机制/index.html">
+<meta property="og:site_name" content="Mickey&#39;s Blog">
+<meta property="og:description" content="问题背景在一次开发任务中，需要实现如下一个饼状图动画，基于canvas进行绘图，但由于对于JS运行环境中异步机制的不了解，所以遇到了一个棘手的问题，始终无法解决，之后在与同事交流之后才恍然大悟。问题的根节在于经典的JS定时器异步问题，所以在解决问题之后，又通过了大量的资料阅读扩展和一段时间的实战总结，现在对JS运行环境中异步机制做一个较为深入的分析。   上图中为最终想要实现的效果，使得各扇形部分">
+<meta property="og:locale" content="default">
+<meta property="og:image" content="http://mickeywang.com/images/tech/setTimeout.gif">
+<meta property="og:image" content="http://mickeywang.com/images/tech/async-2.png">
+<meta property="og:image" content="http://mickeywang.com/images/tech/async-1.JPG">
+<meta property="og:updated_time" content="2018-06-12T07:02:23.129Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="由setTimeout深入JavaScript执行环境的异步机制">
+<meta name="twitter:description" content="问题背景在一次开发任务中，需要实现如下一个饼状图动画，基于canvas进行绘图，但由于对于JS运行环境中异步机制的不了解，所以遇到了一个棘手的问题，始终无法解决，之后在与同事交流之后才恍然大悟。问题的根节在于经典的JS定时器异步问题，所以在解决问题之后，又通过了大量的资料阅读扩展和一段时间的实战总结，现在对JS运行环境中异步机制做一个较为深入的分析。   上图中为最终想要实现的效果，使得各扇形部分">
+<meta name="twitter:image" content="http://mickeywang.com/images/tech/setTimeout.gif">
+<link href="styles.e3951abd024ec79d174c.css" rel="stylesheet">
+
+<script src="config.5aa0996c79da035a734e.js"></script>
+</head>
+<body>
+<is-root></is-root>
+<script src="runtime.a66f828dca56eeb90e02.js"></script><script src="polyfills.8f67e44aa389442fc98e.js"></script><script src="main.2ad268f2adc572b8a4b5.en.js"></script>
+</body>
+</html>
