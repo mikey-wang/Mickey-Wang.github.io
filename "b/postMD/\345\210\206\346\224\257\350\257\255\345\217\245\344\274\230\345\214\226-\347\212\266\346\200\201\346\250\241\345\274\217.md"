@@ -1,0 +1,103 @@
+---
+title: 分支语句优化--状态模式
+date: 2019-01-25T05:00:00.000Z
+categories:
+  - 技术博客
+tags:
+  - JavaScript
+  - 设计模式
+---
+
+状态模式是一种可以极大程度上简化分支语句的行为型模式。如果代码中包含大量与对象状态有关的条件语句，这些条件语句的出现，会导致代码的可维护性和灵活性变差，不能方便地增加和删除状态。这里状态可以是OA系统中批文的流转状态，可以是订单正逆向交易过程中的各种中态，应用场景十分常见。我们可以这样定义状态模式：
+
+> 对象的行为依赖于它的状态（属性），并且可以根据它状态的改变产生不同的行为，从外部看好像是改变了这个对象。
+
+下面是我们常见的分支语句。对于复合状态的条件判断，其开销是翻倍的，十分不利于维护修改。
+
+```
+12345678910111213141516171819202122
+```
+
+```
+// 单状态条件判断 每增加一个状态就需要添加一个判断function Foo1 (status) &#123;	if(status === 1) &#123;		// do sth1	&#125; else if(status === 2) &#123;		// do sth2	&#125;else &#123;		// do sth3	&#125;&#125;// 复合状态对条件判断的开销是翻倍的function Foo2 (status1, status2) &#123;	if (status1 === 1) &#123;		// do sth1	&#125; else if (status1 === 2) &#123;		// do sth2	&#125; else if (status1 === 1 && status2 === 2) &#123;		// do sth1 and sth2	&#125; else if (status1 === 2 && status2 == 3) &#123;		// do sth2 and sth3	&#125;&#125;
+```
+
+注意上边复合状态所产生的行为是单个状态所产生行为的加总。下面我们用状态模式来实现多分支的逻辑。
+
+## 模式实例
+
+```
+123456789101112131415161718192021222324252627282930313233343536373839404142
+```
+
+```
+// 创建状态类function Foo3 () &#123;	// 安全模式	if (!(this instanceof Foo3)) return new Foo3()	// 内部状态私有变量	var _currentStates = &#123;&#125;,	// 状态枚举容器，当然此处可以使用对象来代替	states = new Map([ 		[1, () => &#123;// do sth1&#125;], 		[2, () => &#123;// do sth2&#125;], 		[3, () => &#123;// do sth3&#125;], 		[4, () => &#123;// do sth4&#125;], 		[5, () => &#123;// do sth5&#125;], 		['default', () => &#123;// do sth6&#125;]	])	// 状态控制类	var Action = &#123;		// 改变状态方法 通过传递多个状态决定执行多个动作		changeState: function (...args) &#123;			// 重置内部状态			_currentstate = args || [];			// 返回动作控制类			return this;		&#125;,		// 执行状态对应的动作		goes: function () &#123;			// 遍历内部保存的状态			for (let i of _currentstate) &#123;				// 如果该状态存在则执行				let action = states.get(i) || states.get('default')				action.call(this)			&#125;			return this;		&#125;	&#125;	// 返回接口方法 change、goes	return &#123;		change: Action.changeState,		goes: Action.goes	&#125;&#125;
+```
+
+状态类内部除了有一个私有的状态变量，还有一个状态枚举容器，用来定义所有单一状态值的行为。这里我们使用了ES6的map，当然此你可以使用对象来代替，但是之后你会看到使用map这个新语法特性所带来的巨大灵活性。
+
+由于状态类内部需要保存当前状态，必须实例化为不同的对象使用，所以在其构造方法中加入了安全模式，即使调用方使用`Foo3()`初始化，也相当于使用了new关键字`new Foo3()`。
+
+这里我们输出了两个接口，分别是change和goes，用于改变当前实例的内部状态和执行实例中的所有状态。这样对于臃肿耦合的分支处理逻辑，便转换成以下更为清晰独立的调用方式。
+
+```
+Foo3().change(1, 2).goes().change(3).goes(); // do sth1, do sth2, do sth3
+```
+下面我们来升级一下复合状态的复杂度，我们让多个状态所产生的行为，不再是单个状态所产生行为的简单加总了。此时应该怎么做呢？
+
+```
+123456789101112131415161718192021222324252627282930313233343536373839404142434445
+```
+
+```
+function Foo4 (status1, status2) &#123;	if (status2 === 'A') &#123;		if (status1 === 1) &#123;			// do sth1		&#125; else if (status1 === 2) &#123;			// do sth2		&#125;		// ...	&#125; else if (status2 === 'B') &#123;		if (status1 === 1) &#123;			// do sth3		&#125; else if (status1 === 2) &#123;			// do sth4		&#125;		// ...	&#125;&#125;function Foo5 () &#123;	if (!(this instanceof Foo5)) return new Foo5()	var _currentStates = &#123;&#125;,	states = new Map([ 		['A_1', () => &#123;// do sth1&#125;], 		['A_2', () => &#123;// do sth2&#125;], 		['B_1', () => &#123;// do sth3&#125;], 		['B_2', () => &#123;// do sth4&#125;], 		// ...		['default', () => &#123;// do sth5&#125;]	])	var Action = &#123;		changeState: function (...args) &#123;			_currentstate = args || [];			return this;		&#125;,		goes: function () &#123;			let action = states.get(`$&#123;_currentstate[2]&#125;_$&#123;_currentstate[1]&#125;`) || states.get('default')			action.call(this)			return this;		&#125;	&#125;	return &#123;		change: Action.changeState,		goes: Action.goes	&#125;&#125;
+```
+
+Foo5修改的地方主要是状态枚举的map和输出的goes接口，这里巧妙的用多状态值的字符串拼接，作为map的键值，进而可以通过以下方式调用。
+
+```
+Foo4().change(1, ‘A’).goes(); // do sth1
+```
+
+## 取巧Map
+
+接下来我们再来升级一下复杂度，证明一下map而不是object的巧妙之处。如果状态A下有多种复合状态是做相同的事，其他情况做不同的事，并且A状态下的所有复合状态都需要执行一段相同的逻辑，按照前述做法，states应该是这样的：
+
+```
+12345678
+```
+
+```
+states = new Map([ 	['A_1', () => &#123;// do sth1&#125;], 	['A_2', () => &#123;// do sth1&#125;], 	['A_3', () => &#123;// do sth1&#125;], 	['A_4', () => &#123;// do sth2&#125;], 	// ...	['common', () => &#123;// do common thing&#125;]])
+```
+
+但如果状态规模足够大，或者键值之间的关系更加复杂多变时，map中穷举这样的实现方式也和`if...else`分支一样略显粗鄙。先来了解一下map与object的巨大差异。
+
+> 一个 `Map` 的键可以是任意值，包括函数、对象、基本类型、正则。
+> - Map 中的键值是有序的，而添加到对象中的键则不是。因此，当对它进行遍历时，Map 对象是按插入的顺序返回键值。
+> - 你可以通过  `size`  属性直接获取一个  `Map` 的键值对个数，而  `Object`  的键值对个数只能手动计算。
+> - `Map`  可直接进行迭代，而  `Object`  的迭代需要先获取它的键数组，然后再进行迭代。
+> - `Object`  都有自己的原型，原型链上的键名有可能和你自己在对象上的设置的键名产生冲突。虽然 ES5 开始可以用 `map = Object.create(null)`  来创建一个没有原型的对象，但是这种用法不太常见。
+> - `Map`  在涉及频繁增删键值对的场景下会有些性能优势。
+
+以上摘自MDN，我们这里用到的特性是map键可以为正则，正则的灵活性可以充分简化绝大部分复杂多变的状态关系，如下：
+
+```
+12345678910111213
+```
+
+```
+states = new Map([ 	[/^A_[1-3]$/, () => &#123;// do sth1&#125;], 	[/^A_4$/, () => &#123;// do sth1&#125;], 	// ...	[/^A_.*$/, () => &#123;// do common thing&#125;]])goes: function () &#123;	// 注意无法用 Map.prototype.get(key) 来获取key为正则的值，只能遍历过滤	let states_post = [...states].filter(([key, value]) => key.test(`$&#123;_currentstate[2]&#125;_$&#123;_currentstate[1]&#125;`))	states_post.forEach([key, value] => value.call(this))	return this;&#125;
+```
+
+相信这个例子足以在今后处理复杂分支问题上，带给你诸多灵感。
+
+## 小结
+
+状态模式可以解决程序中臃肿的分支判断语句问题，将每个分支转化为一种状态独立出来，方便每种状态的管理又不至于每次执行时遍历所有分支。再程序中到底产出哪种行为结果，决定于选择哪种状态，而选择何种状态又是再程序运行时决定的。当然状态模式最终的目的是简化分支判断流程。
+
+参考文献
+
+- [MDN—-Map](https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Global_Objects/Map)
+
+- JavaScript设计模式  张容铭

@@ -1,0 +1,19 @@
+{
+  "name": "mickey-wang.github.io",
+  "version": "1.0.0",
+  "description": "- **hexo server**  启动本地服务 - **hexo g -d**  生成本地静态文件并部署 - **hexo clean** 清除缓存文件 (db.json) 和已生成的静态文件 (public) - **hexo new [layout] <title>** 指定文章的布局（layout），默认为 post，可以通过修改 _config.yml 中的 default_layout 参数来指定默认布局 - **hexo publish [layout] <title>** 通过 publish 命令将草稿移动到 source/_posts 文件夹",
+  "main": "config.00d9ee7264eeccdf9384.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "turndown": "^7.1.2"
+  }
+}

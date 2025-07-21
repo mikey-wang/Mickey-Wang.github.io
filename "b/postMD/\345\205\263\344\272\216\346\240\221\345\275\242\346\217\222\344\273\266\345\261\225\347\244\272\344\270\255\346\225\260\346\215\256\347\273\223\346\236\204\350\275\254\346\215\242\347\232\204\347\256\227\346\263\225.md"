@@ -1,0 +1,63 @@
+---
+title: 关于树形插件展示中数据结构转换的算法
+date: 2017-06-03T04:00:00.000Z
+categories:
+  - 技术博客
+tags:
+  - JavaScript
+  - 算法
+---
+
+## 问题背景
+
+在一些目录结构、机构层级等展示的场景中，我们经常会用到一些成熟的树形插件来进行轻松展示，比如ztree等。大多数插件会支持对两种数据源格式的解析，一种是通用的二维数据结构，一种是树状数据结构。对于这两种数据结构的称呼在各插件中可能不尽相同，这里依照二维结构和树状结构来称呼。举例说明如下：
+
+```
+1234567891011121314151617181920212223242526272829303132333435363738394041
+```
+
+```
+// 二维数据结构[&#123;  "id": "001",  "name": "总部",  "parentId": "0"&#125;, &#123;  "id": "002",  "name": "二级门店1",  "parentId": "001"&#125;, &#123;  "id": "003",  "name": "三级门店",  "parentId": "002"&#125;, &#123;  "id": "004",  "name": "二级门店2",  "parentId": "001"&#125;]// 树状数据结构[&#123;    "id": "001",    "name": "总部",    "parentId": "0",    "children": [&#123;      "id": "002",      "name": "二级门店1",      "parentId": "001",      "children": [&#123;        "id": "003",        "name": "三级门店",        "parentId": "002",        "children": []      &#125;]    &#125;, &#123;      "id": "004",      "name": "二级门店2",      "parentId": "001",      "children": []    &#125;]&#125;]
+```
+
+但在某些插件中，或在某些特殊场景中，我们有两种数据结构之间相互转换的需求，需要自己写一个辅助函数来完成。这里就提供两个这样的工具函数来完成数据结构的转换。
+
+Note: 要说明的是，工具函数没有经过大数据量转换测试，所以对有实时性、大量源数据转换需求的同学而言，请自行测试分析，可采取前置或异步等方案处理。由于自身技术水平的局限性，算法本身会有性能优化的空间，若有更优处理算法，还望交流分享，谢谢！
+
+## 解决方案
+
+我们来分开介绍两种数据结构之间的转换算法，每个小结中我会先贴出整个函数的代码清单，以便大家复制粘贴，然后会简要说明其中大概的逻辑思路。
+
+### 二维数据结构 => 树状数据结构
+
+```
+1234567891011121314151617181920212223242526272829303132333435363738394041424344454647484950
+```
+
+```
+/** * 将通用的二维数据结构转换为树状数据结构 * @param  &#123;String&#125; rootParentIdValue 表示根节点的父类id值 * @param  &#123;String&#125; parentIdName      表示父类id的节点名称 * @param  &#123;String&#125; nodeIdName        表示二维结构中，每个对象主键的名称 * @param  &#123;Array&#125; listData           为二维结构的数据 * @return &#123;Array&#125;                    转换后的tree结构数据 */function listToTree(rootParentIdValue, parentIdName, nodeIdName, listData) &#123;  if (listData instanceof Array && listData.length > 0 && listData[0][parentIdName]) &#123;    var rootList = [],        nodeList = []          listData.forEach(function(node, index) &#123;      if (node[parentIdName] == rootParentIdValue) &#123;        rootList.push(node);      &#125; else &#123;        nodeList.push(node);      &#125;    &#125;);    if (nodeList.length > 0 && rootList.length > 0) &#123;      childrenNodeAdd(rootList, nodeList);      return rootList;    &#125; else if (rootList.length > 0) &#123;      throw new Error("没有对应的子节点集合");    &#125; else &#123;      throw new Error("没有对应的父类节点集合");    &#125;    function childrenNodeAdd(rootNodeList, childrenList) &#123;      if (childrenList.length > 0) &#123;         rootNodeList.forEach(function(rootNode) &#123;          rootNode["children"] = [];          var childrenNodeList = childrenList.slice(0);           childrenList.forEach(function(childrenNode, childrenIndex) &#123;            if (parentIdName in childrenNode && rootNode[nodeIdName] == childrenNode[parentIdName]) &#123;              rootNode["children"].push(childrenNode);              childrenNodeList.splice(childrenIndex, 1);            &#125;          &#125;);          childrenNodeAdd(rootNode["children"], childrenNodeList);        &#125;);      &#125;    &#125;      &#125; else &#123;    throw new Error("格式不正确，无法转换");  &#125;&#125;
+```
+
+此函数可通过`listToTree("0", "parentId", "id", sourceData)`调用测试，`sourceData`为文章开头给出的二维数据结构举例。
+
+下面简要介绍一下其中逻辑，第10行是简要验证一下入参数据的合法性，然后声明了rootList和nodeList两个变量。其中rootList为顶级根节点，nodeList为其他子节点集合，第14行到20行的循环便是为两个变量赋值，之后根据两个变量的值进一步判断数据的合法性。在验证之后调用childrenNodeAdd这个内部函数，此函数之后将会被递归调用，为每一个节点添加指定名称为“children”的子节点数组。两个入参分别是rootNodeList和childrenList，代表父节点集合，和其之后的所有子节点集合。在23行第一次调用时，传入的便是顶级根节点和其之后的所有子孙节点。下面看这段带有详细注解的代码片段：
+
+```
+1234567891011121314151617
+```
+
+```
+function childrenNodeAdd(rootNodeList, childrenList) &#123;      if (childrenList.length > 0) &#123; //  如果没有子节点了就结束递归        //遍历父节点集合，在子节点中查找其自身的子节点，并添加到对应的子节点数组中        rootNodeList.forEach(function(rootNode) &#123;          rootNode["children"] = [];          var childrenNodeList = childrenList.slice(0); //复制一个子节点数据，用于存放剩余的子节点          //遍历所有子节点          childrenList.forEach(function(childrenNode, childrenIndex) &#123;            if (parentIdName in childrenNode && rootNode[nodeIdName] == childrenNode[parentIdName]) &#123; //根节点的id 等于子节点的父类id              rootNode["children"].push(childrenNode); //添加对应节点归为子节点              childrenNodeList.splice(childrenIndex, 1);//在剩余子节点中剔除已经分配过的子节点            &#125;          &#125;);          childrenNodeAdd(rootNode["children"], childrenNodeList); //剩余子节点继续递归执行，每次递归一次就表示节点增加一级。        &#125;);      &#125;    &#125;
+```
+
+### 树状数据结构 => 二维数据结构
+
+```
+12345678910111213141516171819
+```
+
+```
+/** * 将树状数据结构转换为二维数据结构 * @param  &#123;String&#125; childrenName 树状结构中子节点名称 * @param  &#123;Array&#125; treeData     树状结构数据 * @return &#123;Array&#125;              转换后的通用二维结构数据 */function treeToList(childrenName, treeData) &#123;  var listData = [];  transferTreeData(treeData);  function transferTreeData (sourceData) &#123;     sourceData.forEach( function(node, nodeIndex) &#123;     if(node[childrenName].length > 0)          transferTreeData(node[childrenName]);      delete node[childrenName];      listData.push(node);     &#125;);  &#125;  return listData;&#125;
+```
+
+此函数可通过`treeToList("children", sourceData)`调用测试，`sourceData`为文章开头给出的树状数据结构举例。这里的逻辑比较简单就不再赘述了。
